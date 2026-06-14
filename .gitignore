@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.env
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Airflow
+airflow.db
+
+# Docker
+*.pid
+
+# Secrets
+config.yaml
+.env.local
