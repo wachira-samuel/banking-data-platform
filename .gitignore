@@ -5,8 +5,13 @@ __pycache__/
 *.pyd
 
 # Virtual environment
-venv/
+.venv/
+bank/
 .env
+
+# Uv package manager
+uv.lock
+pyproject.toml
 
 # Logs
 logs/
