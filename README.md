@@ -315,7 +315,187 @@ Business Intelligence
 
 # 6. Deployment Instructions 
 
+**Clone repository**
+
+    git clone https://github.com/wachira-samuel/banking-data-platform
+
+**Create Virtual environment**
+
+    python -m venv venv
+
+Activate environment.
+
+Linux/Ubuntu/Mac
+
+    source venv/bin/activate
+
+Windows
+
+    venv\Scripts\activate
+
+**Install Dependencies**
+
+    pip install -r requirements.txt
+
+**Start Docker Services**
+
+    docker compose up
+This starts:
+
+• Kafka
+
+• Zookeeper
+
+• PostgreSQL
+
+• Spark
+
+• Airflow
+
+**Start Kafka Producer**
+
+    python src/producer/producer.py
+
+**Start Spark Consumer**
+
+    spark-submit src/streaming/consumer.py
+
+**Start Airflow**
+
+    airflow standalone
+
+**Run ETL Pipeline**
+
+    python src/etl/etl_pipeline.py
+
+# 7. Power BI Dashboard
+
+The dashboard provides transaction monitoring and fraud analytics.
+
+Metrics displayed:
+
+• Transactions per minute
+
+• Fraud alert count
+
+• Failed transactions
+
+• Transaction volume by region
+
+• Top merchants by volume
+
+• Daily transaction trends
+
+**Example Dashboard Layout**
+
+        +-------------------------------------------+
+        | Daily Transaction Volume                  |
+        | █████████████████████                    |
+        +-------------------------------------------+
+
+        +-------------------------------------------+
+        | Fraud Alerts Today                        |
+        | 127 Suspicious Transactions               |
+        +-------------------------------------------+
+
+        +-------------------------------------------+
+        | Transactions by Region                    |
+        | Nairobi | NewYork | Kisumu | Nakuru       |
+        +-------------------------------------------+
+
+        +-------------------------------------------+
+        | Failed Transactions                       |
+        | 32 Failed Validations                     |
+        +-------------------------------------------+
 
 
+        ---------------------------------------------------------------
+        | TRANSACTION MONITORING DASHBOARD                            |
+        ---------------------------------------------------------------
 
+        Total Transactions Today        Fraud Alerts Today
+        124,563                         214
+
+        ---------------------------------------------------------------
+
+        Transaction Volume by Region
+
+        Nairobi      ███████████████
+
+        NewYork      ██████████
+
+        Kisumu       ███████
+
+        Nakuru       █████████
+
+        ---------------------------------------------------------------
+
+        Failed Transactions
+
+        12 Failed Data Validations
+
+        ---------------------------------------------------------------
+
+        Top Merchants
+
+        Naivas
+        Carrefour
+        Quickmart
+        JumiaPay
+
+        ---------------------------------------------------------------
+
+# 9. Kafka Metrics Monitoring
+
+Kafka metrics help monitor system health.
+
+Important metrics:
+
+**a) Producer throughput**
+
+Tracks messages sent per second
+
+Example:
+
+    Messages/sec = 1200
+
+**b) Consumer Lag**
+
+Tracks delay in processing messages.
+
+Example:
+
+    Lag = 15 messages
+
+**c) Broker health**
+
+Track active brokers.
+
+Example:
+
+    3 Active Brokers
+
+**d) Topic size**
+
+Tracks volume of transaction messages.
+
+Example:
+
+    Topic = 1.5 GB
+
+**e) Failed Messages**
+
+Track messages that failed delivery.
+
+Example:
+        
+    Failed messages = 4
+
+`Monitoring tools:`
+
+• Kafka UI
+
+• Grafana
+
+    
 
