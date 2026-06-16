@@ -123,6 +123,8 @@ For fraud detection model
 
 • Git
 
+<img width="1920" height="950" alt="image" src="https://github.com/user-attachments/assets/f72458c5-3c54-4408-b938-698432e5c2a4" />
+
 For Deployment and CI/CD automation.
 
 # 4. Project Folder Structure
@@ -131,18 +133,29 @@ For Deployment and CI/CD automation.
 
     src/
      ├── producer/
+            ├── producer.py
+            ├── transaction_generator.py   
      ├── streaming/
-     ├── validation/
-     ├── storage/
-     ├── etl/
-     ├── fraud_detection/
+            ├── __pycache__ 
+            ├── config.py
+            ├── fraud_rules.py
+            ├── postgres_sink.py
+            ├── schema.py
+            ├── spark_streaming.py
+            ├── transformation.py
      ├── monitoring/
+            ├── monitoring.py
+     ├── storage/
+            ├── __pycache__
+            ├── create_analytics_table.py
+            ├── db.py
+     ├── logs/
+            ├── pipeline.log
+     ├── etl/
+    
 
     dags/
      ├── transaction_pipeline_dag.py
-
-    sql/
-     ├── create_tables.sql
 
     dashboards/
      ├── powerbi_dashboard.pbix
@@ -183,7 +196,7 @@ Kafka Topic:
 
 File:
 
-    src/producer/producer.py
+    src/prodducer/producer.py
 
 **`Purpose:`** Real-time event streaming.
 
@@ -203,7 +216,7 @@ Tasks:
 
 File:
 
-    src/streaming/consumer.py
+    src/streaming/spark_streaming.py
 
 **Step 4: Data Validation**
 
