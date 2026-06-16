@@ -96,6 +96,13 @@ Apache Airflow
 
 • PostgreSQL
 
+<img width="1920" height="615" alt="image" src="https://github.com/user-attachments/assets/eba3d70a-a679-42fa-b5a0-adbd09fdf883" />
+
+<img width="1745" height="1009" alt="image" src="https://github.com/user-attachments/assets/d152aab0-bfd6-4a35-a321-162cdb29668c" />
+
+<img width="1781" height="1025" alt="image" src="https://github.com/user-attachments/assets/ead5b27a-8ef6-4a23-a885-021df14cdb75" />
+
+
 • BigQuery
 
  For Structured transactional data storage, Analytical Querying and reporting, Data marts for fraud analysis and business intelligence.
