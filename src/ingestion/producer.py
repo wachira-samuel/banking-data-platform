@@ -2,7 +2,7 @@ import json
 import time
 import logging
 from kafka import KafkaProducer
-from transaction_generator import generate_transaction
+from .transaction_generator import generate_transaction
 
 
 # Logging configuration
