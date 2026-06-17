@@ -3,6 +3,16 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+# Spark checkpoints
+/tmp/
+
+# Local datalake
+src/datalake/
+
+# Spark metadata
+_spark_metadata/
+*.crc
+
 
 # Virtual environment
 .venv/
