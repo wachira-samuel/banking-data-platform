@@ -15,26 +15,64 @@ from streaming.config import (
 )
 
 # ---------------------------------------------------
-# 1. Spark Session
+# GCS CONFIG
 # ---------------------------------------------------
-spark = SparkSession.builder \
-    .master("local[*]") \
-    .appName("BankingStreaming") \
-    .config("spark.driver.memory", "2g") \
+GCS_BUCKET = "banking-fraud-streaming-lake"
+GCS_KEY = "credentials/spark-gcs-key.json"
+
+
+# 1. Spark Session
+
+spark = (
+    SparkSession.builder
+    .master("local[*]")
+    .appName("BankingStreaming")
+    .config("spark.driver.memory", "2g")
+
+    # 🔥 GCS JAR (critical fix)
+    .config(
+        "spark.driver.extraClassPath",
+        "/mnt/e/banking-data-platform/lib/gcs-connector-hadoop3-latest.jar"
+    )
+    .config(
+        "spark.executor.extraClassPath",
+        "/mnt/e/banking-data-platform/lib/gcs-connector-hadoop3-latest.jar"
+    )
+
+    # Kafka + Postgres only (safe via Ivy)
     .config(
         "spark.jars.packages",
         ",".join([
             "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1",
             "org.postgresql:postgresql:42.7.3"
         ])
-    ) \
+    )
+
+    # 🔥 REQUIRED for gs:// support
+    .config(
+        "spark.hadoop.fs.gs.impl",
+        "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem"
+    )
+    .config(
+        "spark.hadoop.fs.AbstractFileSystem.gs.impl",
+        "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS"
+    )
+
+    # Auth (required)
+    .config(
+        "spark.hadoop.google.cloud.auth.service.account.enable",
+        "true"
+    )
+    .config(
+        "spark.hadoop.google.cloud.auth.service.account.json.keyfile",
+        "/mnt/e/banking-data-platform/credentials/spark-gcs-key.json"
+    )
+
     .getOrCreate()
+)
 
-spark.sparkContext.setLogLevel("WARN")
-
-# ---------------------------------------------------
 # 2. Read Kafka Stream
-# ---------------------------------------------------
+
 kafka_df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
@@ -43,9 +81,9 @@ kafka_df = spark.readStream \
     .option("failOnDataLoss", "false") \
     .load()
 
-# ---------------------------------------------------
+
 # 3. Parse JSON
-# ---------------------------------------------------
+
 json_df = kafka_df.selectExpr(
     "CAST(value AS STRING) as json_str"
 )
@@ -57,68 +95,58 @@ transactions_df = json_df.select(
     ).alias("data")
 ).select("data.*")
 
-# ---------------------------------------------------
 # 4. Convert Timestamp
-# ---------------------------------------------------
+
 transactions_df = transactions_df.withColumn(
     "event_time",
     to_timestamp(col("timestamp"))
 ).drop("timestamp")
 
-# ---------------------------------------------------
-# 5. Raw Data Lake
-# ---------------------------------------------------
+
+# 5. RAW Query to GCS
 raw_query = transactions_df.writeStream \
     .format("parquet") \
-    .option("path", "datalake/raw") \
+    .option("path", f"gs://{GCS_BUCKET}/raw") \
     .option("checkpointLocation", "/tmp/raw_checkpoint") \
     .outputMode("append") \
     .start()
 
-# ---------------------------------------------------
+
 # 6. Validation Layer
-# ---------------------------------------------------
 valid_df, invalid_df = validate_transactions(
     transactions_df
 )
 
-# ---------------------------------------------------
-# 7. Invalid Records Quarantine
-# ---------------------------------------------------
+
+# 7. INVALID Query to GCS QUARANTINE
 invalid_query = invalid_df.writeStream \
     .format("parquet") \
-    .option("path", "datalake/invalid") \
+    .option("path", f"gs://{GCS_BUCKET}/invalid") \
     .option("checkpointLocation", "/tmp/invalid_checkpoint") \
     .outputMode("append") \
     .start()
 
-# ---------------------------------------------------
+
 # 8. Transform Valid Records
-# ---------------------------------------------------
 transformed_df = transform_transactions(
     valid_df
 )
 
-# ---------------------------------------------------
+
 # 9. Fraud Detection Rules
-# ---------------------------------------------------
 final_df = add_fraud_features(
     transformed_df
 )
 
-# ---------------------------------------------------
-# 10. Processed Data Lake
-# ---------------------------------------------------
+# 10. PROCESSED Query to GCS
 processed_query = final_df.writeStream \
     .format("parquet") \
-    .option("path", "datalake/processed") \
+    .option("path", f"gs://{GCS_BUCKET}/processed") \
     .option("checkpointLocation", "/tmp/processed_checkpoint") \
     .outputMode("append") \
     .start()
 
-# ---------------------------------------------------
-# 11. PostgreSQL Sink
-# ---------------------------------------------------
+# 11. PostgreSQL Sink (temporary until BigQuery)
 def write_to_postgres(batch_df, batch_id):
 
     print(f"Writing batch {batch_id}")
@@ -145,7 +173,5 @@ postgres_query = final_df.writeStream \
     ) \
     .start()
 
-# ---------------------------------------------------
 # 12. Keep Streams Running
-# ---------------------------------------------------
 spark.streams.awaitAnyTermination()

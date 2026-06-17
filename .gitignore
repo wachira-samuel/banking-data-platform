@@ -22,6 +22,10 @@ src/datalake/invalid/*
 _spark_metadata/
 *.crc
 
+# Secrets Credentials
+credentials/
+*.json
+
 
 # Virtual environment
 .venv/
@@ -55,3 +59,10 @@ airflow.db
 # Secrets
 config.yaml
 .env.local
+
+# Google Cloud SDK / CLI
+src/google-cloud-sdk/
+src/google-cloud-cli-linux-x86_64.tar.gz
+
+# Local jars / libs 
+lib/
