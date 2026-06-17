@@ -3,11 +3,20 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-# Spark checkpoints
-/tmp/
 
-# Local datalake
-src/datalake/
+# Spark
+tmp/
+spark-warehouse/
+metastore_db/
+
+# Checkpoints
+/tmp/
+/checkpoints/
+
+# Data lake generated files
+src/datalake/raw/*
+src/datalake/processed/*
+src/datalake/invalid/*
 
 # Spark metadata
 _spark_metadata/
