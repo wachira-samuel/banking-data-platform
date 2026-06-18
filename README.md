@@ -77,6 +77,10 @@ The platform processes transaction data through multiple stages
 
  For Streaming processes and large-scale transaction transformation.
 
+<img width="1697" height="1016" alt="image" src="https://github.com/user-attachments/assets/0020ffd8-9076-49ee-9186-5ac8de113470" />
+
+
+
 `d) Workflow Orchestration`:
 Apache Airflow
 
@@ -85,6 +89,9 @@ Apache Airflow
 `e) Cloud Infrastructure`:
 
 • Google Cloud Storage(GCS)
+
+<img width="1902" height="836" alt="image" src="https://github.com/user-attachments/assets/b8e23f1e-c7ac-4afa-8762-54aabb76fed0" />
+
 
 • Cloud Dataflow
 
@@ -132,7 +139,7 @@ For Deployment and CI/CD automation.
     banking-data-platform/
 
     src/
-     ├── producer/
+     ├── ingestion/
             ├── producer.py
             ├── transaction_generator.py   
      ├── streaming/
@@ -143,19 +150,17 @@ For Deployment and CI/CD automation.
             ├── schema.py
             ├── spark_streaming.py
             ├── transformation.py
-     ├── monitoring/
-            ├── monitoring.py
+     ├── orchestration/
+            ├── airflow_dag.py
      ├── storage/
             ├── __pycache__
             ├── create_analytics_table.py
             ├── db.py
      ├── logs/
             ├── pipeline.log
-     ├── etl/
-    
-
-    dags/
-     ├── transaction_pipeline_dag.py
+     ├── cloud/
+          ├── bigquery_loader.py
+          ├── gcs_sink.py
 
     dashboards/
      ├── powerbi_dashboard.pbix
@@ -374,11 +379,11 @@ This starts:
 
 **Start Kafka Producer**
 
-    python src/producer/producer.py
+    python src/ingestion/producer.py
 
 **Start Spark Consumer**
 
-    spark-submit src/streaming/consumer.py
+    python src/streaming/spark_streaming.py
 
 **Start Airflow**
 
