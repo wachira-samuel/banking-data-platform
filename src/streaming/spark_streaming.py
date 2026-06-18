@@ -14,9 +14,7 @@ from streaming.config import (
     POSTGRES_DRIVER
 )
 
-# ---------------------------------------------------
 # GCS CONFIG
-# ---------------------------------------------------
 GCS_BUCKET = "banking-fraud-streaming-lake"
 GCS_KEY = "credentials/spark-gcs-key.json"
 
@@ -29,7 +27,7 @@ spark = (
     .appName("BankingStreaming")
     .config("spark.driver.memory", "2g")
 
-    # 🔥 GCS JAR (critical fix)
+    # GCS JAR
     .config(
         "spark.driver.extraClassPath",
         "/mnt/e/banking-data-platform/lib/gcs-connector-hadoop3-latest.jar"
@@ -39,7 +37,7 @@ spark = (
         "/mnt/e/banking-data-platform/lib/gcs-connector-hadoop3-latest.jar"
     )
 
-    # Kafka + Postgres only (safe via Ivy)
+    # Kafka + Postgres only
     .config(
         "spark.jars.packages",
         ",".join([
@@ -48,7 +46,7 @@ spark = (
         ])
     )
 
-    # 🔥 REQUIRED for gs:// support
+    # REQUIRED for gs
     .config(
         "spark.hadoop.fs.gs.impl",
         "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem"
@@ -149,21 +147,39 @@ processed_query = final_df.writeStream \
 # 11. PostgreSQL Sink (temporary until BigQuery)
 def write_to_postgres(batch_df, batch_id):
 
-    print(f"Writing batch {batch_id}")
+    print("\n==============================")
+    print("POSTGRES FOREACHBATCH STARTED")
+    print("Batch ID:", batch_id)
 
-    batch_df.write \
-        .format("jdbc") \
-        .option("url", POSTGRES_URL) \
-        .option("dbtable", "public.transaction_analytics") \
-        .option("user", POSTGRES_USER) \
-        .option("password", POSTGRES_PASSWORD) \
-        .option("driver", POSTGRES_DRIVER) \
-        .mode("append") \
-        .save()
+    try:
+        rows = batch_df.count()
+        print("ROWS RECEIVED:", rows)
 
-    print(f"Batch {batch_id} written successfully")
+        batch_df.show(5, truncate=False)
 
+        if rows == 0:
+            print("EMPTY BATCH — skipping")
+            return
 
+        batch_df.write \
+            .format("jdbc") \
+            .option("url", POSTGRES_URL) \
+            .option("dbtable", "public.transaction_analytics") \
+            .option("user", POSTGRES_USER) \
+            .option("password", POSTGRES_PASSWORD) \
+            .option("driver", POSTGRES_DRIVER) \
+            .mode("append") \
+            .save()
+
+        print("POSTGRES WRITE SUCCESS")
+
+    except Exception as e:
+        print("POSTGRES WRITE FAILED:", str(e))
+
+debug_query = final_df.writeStream \
+    .format("console") \
+    .outputMode("append") \
+    .start()
 postgres_query = final_df.writeStream \
     .foreachBatch(write_to_postgres) \
     .outputMode("append") \
@@ -174,4 +190,13 @@ postgres_query = final_df.writeStream \
     .start()
 
 # 12. Keep Streams Running
+print("\nACTIVE STREAMS\n")
+
+for q in spark.streams.active:
+    print("===============================")
+    print("ID:", q.id)
+    print("Name:", q.name)
+    print("Is Active:", q.isActive)
+    print("Status:", q.status)
+
 spark.streams.awaitAnyTermination()
