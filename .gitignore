@@ -66,3 +66,5 @@ src/google-cloud-cli-linux-x86_64.tar.gz
 
 # Local jars / libs 
 lib/
+# spark checkpoints
+/tmp/

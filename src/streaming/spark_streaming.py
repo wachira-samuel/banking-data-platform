@@ -1,10 +1,11 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, to_timestamp
+from pyspark.sql.functions import from_json, col, to_timestamp, date_format
 
-from streaming.validator import validate_transactions
 from streaming.schema import transaction_schema
 from streaming.transformations import transform_transactions
 from streaming.fraud_rules import add_fraud_features
+from streaming.validator import validate_transactions
+
 from streaming.config import (
     KAFKA_BOOTSTRAP_SERVERS,
     KAFKA_TOPIC,
@@ -14,30 +15,17 @@ from streaming.config import (
     POSTGRES_DRIVER
 )
 
-# GCS CONFIG
-GCS_BUCKET = "banking-fraud-streaming-lake"
-GCS_KEY = "credentials/spark-gcs-key.json"
+from cloud.bigquery_loader import write_to_bigquery as bq_writer
 
 
-# 1. Spark Session
-
+# =========================
+# 1. SPARK SESSION
+# =========================
 spark = (
     SparkSession.builder
     .master("local[*]")
     .appName("BankingStreaming")
     .config("spark.driver.memory", "2g")
-
-    # GCS JAR
-    .config(
-        "spark.driver.extraClassPath",
-        "/mnt/e/banking-data-platform/lib/gcs-connector-hadoop3-latest.jar"
-    )
-    .config(
-        "spark.executor.extraClassPath",
-        "/mnt/e/banking-data-platform/lib/gcs-connector-hadoop3-latest.jar"
-    )
-
-    # Kafka + Postgres only
     .config(
         "spark.jars.packages",
         ",".join([
@@ -45,158 +33,188 @@ spark = (
             "org.postgresql:postgresql:42.7.3"
         ])
     )
-
-    # REQUIRED for gs
-    .config(
-        "spark.hadoop.fs.gs.impl",
-        "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem"
-    )
-    .config(
-        "spark.hadoop.fs.AbstractFileSystem.gs.impl",
-        "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS"
-    )
-
-    # Auth (required)
-    .config(
-        "spark.hadoop.google.cloud.auth.service.account.enable",
-        "true"
-    )
-    .config(
-        "spark.hadoop.google.cloud.auth.service.account.json.keyfile",
-        "/mnt/e/banking-data-platform/credentials/spark-gcs-key.json"
-    )
-
     .getOrCreate()
 )
 
-# 2. Read Kafka Stream
+spark.sparkContext.setLogLevel("WARN")
 
-kafka_df = spark.readStream \
-    .format("kafka") \
-    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
-    .option("subscribe", KAFKA_TOPIC) \
-    .option("startingOffsets", "earliest") \
-    .option("failOnDataLoss", "false") \
+
+# =========================
+# 2. KAFKA SOURCE
+# =========================
+kafka_df = (
+    spark.readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS)
+    .option("subscribe", KAFKA_TOPIC)
+    .option("startingOffsets", "earliest")
+    .option("failOnDataLoss", "false")
     .load()
-
-
-# 3. Parse JSON
-
-json_df = kafka_df.selectExpr(
-    "CAST(value AS STRING) as json_str"
 )
 
-transactions_df = json_df.select(
-    from_json(
-        col("json_str"),
-        transaction_schema
-    ).alias("data")
-).select("data.*")
+json_df = kafka_df.selectExpr("CAST(value AS STRING) as json_str")
 
-# 4. Convert Timestamp
+parsed_df = (
+    json_df.select(from_json(col("json_str"), transaction_schema).alias("data"))
+    .select("data.*")
+)
 
-transactions_df = transactions_df.withColumn(
+
+# =========================
+# 3. TIMESTAMP CLEANING
+# =========================
+parsed_df = parsed_df.withColumn(
     "event_time",
-    to_timestamp(col("timestamp"))
+    date_format(to_timestamp(col("timestamp")), "yyyy-MM-dd HH:mm:ss")
 ).drop("timestamp")
 
 
-# 5. RAW Query to GCS
-raw_query = transactions_df.writeStream \
-    .format("parquet") \
-    .option("path", f"gs://{GCS_BUCKET}/raw") \
-    .option("checkpointLocation", "/tmp/raw_checkpoint") \
-    .outputMode("append") \
-    .start()
+# =========================
+# 4. VALIDATION + TRANSFORM
+# =========================
+valid_df, invalid_df = validate_transactions(parsed_df)
+
+transformed_df = transform_transactions(valid_df)
+final_df = add_fraud_features(transformed_df)
 
 
-# 6. Validation Layer
-valid_df, invalid_df = validate_transactions(
-    transactions_df
-)
-
-
-# 7. INVALID Query to GCS QUARANTINE
-invalid_query = invalid_df.writeStream \
-    .format("parquet") \
-    .option("path", f"gs://{GCS_BUCKET}/invalid") \
-    .option("checkpointLocation", "/tmp/invalid_checkpoint") \
-    .outputMode("append") \
-    .start()
-
-
-# 8. Transform Valid Records
-transformed_df = transform_transactions(
-    valid_df
-)
-
-
-# 9. Fraud Detection Rules
-final_df = add_fraud_features(
-    transformed_df
-)
-
-# 10. PROCESSED Query to GCS
-processed_query = final_df.writeStream \
-    .format("parquet") \
-    .option("path", f"gs://{GCS_BUCKET}/processed") \
-    .option("checkpointLocation", "/tmp/processed_checkpoint") \
-    .outputMode("append") \
-    .start()
-
-# 11. PostgreSQL Sink (temporary until BigQuery)
+# =========================
+# 5. POSTGRES SINK
+# =========================
 def write_to_postgres(batch_df, batch_id):
+    print(f"[Postgres] Batch {batch_id}")
 
-    print("\n==============================")
-    print("POSTGRES FOREACHBATCH STARTED")
-    print("Batch ID:", batch_id)
+    if batch_df.rdd.isEmpty():
+        return
 
-    try:
-        rows = batch_df.count()
-        print("ROWS RECEIVED:", rows)
+    batch_df.write \
+        .format("jdbc") \
+        .option("url", POSTGRES_URL) \
+        .option("dbtable", "public.transaction_analytics") \
+        .option("user", POSTGRES_USER) \
+        .option("password", POSTGRES_PASSWORD) \
+        .option("driver", POSTGRES_DRIVER) \
+        .mode("append") \
+        .save()
 
-        batch_df.show(5, truncate=False)
 
-        if rows == 0:
-            print("EMPTY BATCH — skipping")
-            return
+# =========================
+# 6. SINGLE STREAM SINK
 
-        batch_df.write \
-            .format("jdbc") \
-            .option("url", POSTGRES_URL) \
-            .option("dbtable", "public.transaction_analytics") \
-            .option("user", POSTGRES_USER) \
-            .option("password", POSTGRES_PASSWORD) \
-            .option("driver", POSTGRES_DRIVER) \
-            .mode("append") \
-            .save()
+def sink_all(batch_df, batch_id):
 
-        print("POSTGRES WRITE SUCCESS")
+    row_count = batch_df.count()
 
-    except Exception as e:
-        print("POSTGRES WRITE FAILED:", str(e))
+    print("\n" + "=" * 60)
+    print(f"[PIPELINE] Processing batch={batch_id}")
+    print(f"[PIPELINE] Rows={row_count}")
 
-debug_query = final_df.writeStream \
-    .format("console") \
-    .outputMode("append") \
+    batch_df.show(100, truncate=False)
+
+    if row_count == 0:
+        print("[PIPELINE] Empty batch skipped")
+        return
+
+    # --------------------------------
+    # POSTGRES DATAFRAME
+    # account_id -> integer
+    # event_time -> text (matches postgres)
+    # --------------------------------
+    postgres_df = (
+        batch_df
+        .withColumn("account_id", col("account_id").cast("int"))
+        .withColumn("event_time", col("event_time").cast("string"))
+    )
+
+    # --------------------------------
+    # BIGQUERY DATAFRAME
+    # account_id -> string
+    # event_time -> timestamp
+    # --------------------------------
+    bq_df = (
+        batch_df
+        .withColumn("account_id", col("account_id").cast("string"))
+        .withColumn("event_time", to_timestamp(col("event_time")))
+    )
+
+    print("[PIPELINE] Writing to Postgres...")
+    write_to_postgres(postgres_df, batch_id)
+
+    print("[PIPELINE] Writing to BigQuery...")
+    bq_writer(bq_df, batch_id)
+
+    print(f"[PIPELINE] Batch {batch_id} completed")
+
+
+
+
+# 7. MAIN STREAM QUERY
+# =========================
+main_query = (
+    final_df.writeStream
+    .foreachBatch(sink_all)
+    .option("checkpointLocation", "/tmp/checkpoint_main")
+    .outputMode("append")
     .start()
-postgres_query = final_df.writeStream \
-    .foreachBatch(write_to_postgres) \
-    .outputMode("append") \
-    .option(
-        "checkpointLocation",
-        "/tmp/postgres_checkpoint"
-    ) \
+)
+# 8. INVALID DATA STREAM
+# =========================
+invalid_query = (
+    invalid_df.writeStream
+    .format("parquet")
+    .option("path", "/tmp/banking/invalid")
+    .option("checkpointLocation", "/tmp/checkpoints/invalid")
+    .outputMode("append")
     .start()
+)
 
-# 12. Keep Streams Running
-print("\nACTIVE STREAMS\n")
+
+# =========================
+# 9. PROCESSED ARCHIVE
+# =========================
+processed_query = (
+    final_df.writeStream
+    .format("parquet")
+    .option("path", "/tmp/banking/processed")
+    .option("checkpointLocation", "/tmp/checkpoints/processed")
+    .outputMode("append")
+    .start()
+)
+
+
+# =========================
+# 10. RAW STREAM
+# =========================
+raw_query = (
+    parsed_df.writeStream
+    .format("parquet")
+    .option("path", "/tmp/banking/raw")
+    .option("checkpointLocation", "/tmp/checkpoints/raw")
+    .outputMode("append")
+    .start()
+)
+
+
+# =========================
+# 11 DEBUG STREAM
+debug_query = (
+    final_df.writeStream
+    .format("console")
+    .option("numRows", 100)
+    .option("truncate", False)
+    .outputMode("append")
+    .start()
+)
+
+
+# =========================
+# 12. KEEP ALIVE
+# =========================
+print("ACTIVE STREAMS:")
 
 for q in spark.streams.active:
-    print("===============================")
+    print("---------------")
     print("ID:", q.id)
-    print("Name:", q.name)
-    print("Is Active:", q.isActive)
-    print("Status:", q.status)
+    print("Active:", q.isActive)
 
 spark.streams.awaitAnyTermination()
