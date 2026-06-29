@@ -18,13 +18,12 @@ from streaming.config import (
 from cloud.bigquery_loader import write_to_bigquery as bq_writer
 
 
-# =========================
+
 # 1. SPARK SESSION
-# =========================
+
 spark = (
     SparkSession.builder
-    .master("local[*]")
-    .appName("BankingStreaming")
+    .appName("BankingStreaming").getOrCreate()
     .config("spark.driver.memory", "2g")
     .config(
         "spark.jars.packages",
@@ -39,9 +38,9 @@ spark = (
 spark.sparkContext.setLogLevel("WARN")
 
 
-# =========================
+
 # 2. KAFKA SOURCE
-# =========================
+
 kafka_df = (
     spark.readStream
     .format("kafka")
@@ -60,27 +59,27 @@ parsed_df = (
 )
 
 
-# =========================
+
 # 3. TIMESTAMP CLEANING
-# =========================
+
 parsed_df = parsed_df.withColumn(
     "event_time",
     date_format(to_timestamp(col("timestamp")), "yyyy-MM-dd HH:mm:ss")
 ).drop("timestamp")
 
 
-# =========================
+
 # 4. VALIDATION + TRANSFORM
-# =========================
+
 valid_df, invalid_df = validate_transactions(parsed_df)
 
 transformed_df = transform_transactions(valid_df)
 final_df = add_fraud_features(transformed_df)
 
 
-# =========================
+
 # 5. POSTGRES SINK
-# =========================
+
 def write_to_postgres(batch_df, batch_id):
     print(f"[Postgres] Batch {batch_id}")
 
@@ -98,7 +97,7 @@ def write_to_postgres(batch_df, batch_id):
         .save()
 
 
-# =========================
+
 # 6. SINGLE STREAM SINK
 
 def sink_all(batch_df, batch_id):
@@ -115,22 +114,15 @@ def sink_all(batch_df, batch_id):
         print("[PIPELINE] Empty batch skipped")
         return
 
-    # --------------------------------
     # POSTGRES DATAFRAME
-    # account_id -> integer
-    # event_time -> text (matches postgres)
-    # --------------------------------
     postgres_df = (
         batch_df
         .withColumn("account_id", col("account_id").cast("int"))
         .withColumn("event_time", col("event_time").cast("string"))
     )
 
-    # --------------------------------
+
     # BIGQUERY DATAFRAME
-    # account_id -> string
-    # event_time -> timestamp
-    # --------------------------------
     bq_df = (
         batch_df
         .withColumn("account_id", col("account_id").cast("string"))
@@ -149,7 +141,7 @@ def sink_all(batch_df, batch_id):
 
 
 # 7. MAIN STREAM QUERY
-# =========================
+
 main_query = (
     final_df.writeStream
     .foreachBatch(sink_all)
@@ -157,8 +149,9 @@ main_query = (
     .outputMode("append")
     .start()
 )
+
 # 8. INVALID DATA STREAM
-# =========================
+
 invalid_query = (
     invalid_df.writeStream
     .format("parquet")
@@ -169,9 +162,9 @@ invalid_query = (
 )
 
 
-# =========================
+
 # 9. PROCESSED ARCHIVE
-# =========================
+
 processed_query = (
     final_df.writeStream
     .format("parquet")
@@ -182,9 +175,9 @@ processed_query = (
 )
 
 
-# =========================
+
 # 10. RAW STREAM
-# =========================
+
 raw_query = (
     parsed_df.writeStream
     .format("parquet")
@@ -195,7 +188,7 @@ raw_query = (
 )
 
 
-# =========================
+
 # 11 DEBUG STREAM
 debug_query = (
     final_df.writeStream
@@ -207,9 +200,9 @@ debug_query = (
 )
 
 
-# =========================
+
 # 12. KEEP ALIVE
-# =========================
+
 print("ACTIVE STREAMS:")
 
 for q in spark.streams.active:
