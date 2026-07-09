@@ -1,8 +1,8 @@
 # Real-Time Banking Transaction Monitoring and Fraud Detection Platform.
 
-This project showcase my implementation of an enterprise banking data platform that processes transactions in real-time, validating data quality, detecting fraud and storing data in cloud storage + warehouse, orchestrating ETL and provide analytics dashboard for fraud monitoring and business reporting. This platform is built using a prouction-style data engineering architecture using Kafka, Spark, Airflow, Google Cloud Platform, PostgreSQL, Power BI , Docker and Machine Learning.
+This project demonstrates an end-to-end data engineering platform for processing banking transactions in real time. It ingests streaming events with Apache Kafka, processes and validates them using PySpark, stores data in PostgreSQL and Google Cloud Storage, loads analytics-ready datasets into BigQuery, orchestrates workflows with Apache Airflow and visualizes business metrics in Power BI.
 
-The goal is demonstrate how enterprise banking systems handle real-time streaming data piplines, compliance reporting, fraud detection and anlytics architecture.
+The goal is to demonstrate how enterprise banking systems handle real-time streaming data piplines, compliance reporting, fraud detection and anlytics architecture.
 
 # 1. Problem Statement
 
@@ -12,33 +12,66 @@ The bank needs a system that can process transactions in real time, detect suspi
 
 This project solves that problem by building an  end-to-end banking data platform.
 
+## Features
+
+- Real-time transaction streaming using Apache Kafka
+- Data validation and cleansing
+- Fraud detection rules
+- PostgreSQL operational storage
+- Google Cloud Storage data lake
+- BigQuery analytics warehouse
+- Apache Airflow orchestration
+- Power BI dashboards
+- Dockerized development environment
+
 # 2. Architecture Overview
 
-The platform processes transaction data through multiple stages
+                          Apache Airflow
+                  (Pipeline Scheduling & Orchestration)
+                               │
+                               ▼
 
-    Data Sources
-        ↓
-    Transaction Generator
-        ↓
-    Kafka Producer
-        ↓
-    Apache Kafka Cluster (Streaming Topic)
-        ↓
-    Spark Streaming Processing (PySpark)
-        ↓
-    Data Validation (Great Expectations)
-        ↓
-    Google Cloud Storage (Raw/Processed Data)
-        ↓
-    Cloud Dataflow ETL Processing
-        ↓
-    BigQuery Data Warehouse (Core Data Marts)
-        ↓
-    Apache Airflow Orchestration
-        ↓
-    Fraud Detection Models
-        ↓
-    Power BI Dashboards & Reporting
+                     Transaction Generator
+                               │
+                               ▼
+                        Kafka Producer
+                               │
+                               ▼
+                Apache Kafka (bank_transactions)
+                               │
+                               ▼
+             Spark Structured Streaming (PySpark)
+                               │
+               ┌───────────────┼────────────────┐
+               ▼               ▼                ▼
+      Data Validation   Data Transformation   Fraud Detection
+               │               │                │
+               └───────────────┴────────────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          ▼                    ▼                    ▼
+       PostgreSQL           Google Cloud Storage     BigQuery
+     (Operational Store)     (Raw & Processed)   (Analytics Warehouse)
+                                                    │
+                                                    ▼
+                                           Power BI Dashboards
+
+
+| Component                  | Purpose                                            |
+| -------------------------- | -------------------------------------------------- |
+| Transaction Generator      | Simulates banking transactions                     |
+| Kafka Producer             | Publishes events to Kafka                          |
+| Apache Kafka               | Streaming message broker                           |
+| Spark Structured Streaming | Processes transaction streams in real time         |
+| Data Validation            | Ensures data quality before storage                |
+| Data Transformation        | Cleans and enriches transaction data               |
+| Fraud Detection            | Applies fraud detection rules and risk scoring     |
+| PostgreSQL                 | Stores operational transaction records             |
+| Google Cloud Storage       | Stores raw and processed datasets in the data lake |
+| BigQuery                   | Stores analytics-ready data for reporting          |
+| Power BI                   | Business intelligence dashboards                   |
+| Apache Airflow             | Schedules and orchestrates the entire pipeline     |
+
 
 **Architecture Diagram**
 
@@ -46,356 +79,167 @@ The platform processes transaction data through multiple stages
 
 # 3. Technology Stack
 
-`a) Programming`:
-
-• Python
-
-• SQL
-
-• Bash
-
-`b) Data Streaming`:
-
-• Apache Kafka
-
-• Kafka Producer 
-
-• Kafka Consumer
-
- For Real-time Transaction ingestion.
-
-**Output**
-<img width="1920" height="820" alt="producer py" src="https://github.com/user-attachments/assets/143cbc7e-3e11-4959-8ea6-8277ec061ed5" />
-
-<img width="1916" height="996" alt="consumer py" src="https://github.com/user-attachments/assets/958e3e8e-dbeb-448c-bacb-387cd8191891" />
-
-`c) Big data Processing`:
-
-• Apache Spark
-
-• PySpark 
-
- For Streaming processes and large-scale transaction transformation.
-
-<img width="1697" height="1016" alt="image" src="https://github.com/user-attachments/assets/0020ffd8-9076-49ee-9186-5ac8de113470" />
-
-
-
-`d) Workflow Orchestration`:
-Apache Airflow
-
- For Scheduling ETL pipleines and Manage dependencies.
-
-`e) Cloud Infrastructure`:
-
-• Google Cloud Storage(GCS)
-
-<img width="1902" height="836" alt="image" src="https://github.com/user-attachments/assets/b8e23f1e-c7ac-4afa-8762-54aabb76fed0" />
-
-
-• Cloud Dataflow
-
-• Big Query
-
- For Raw data storage, data transformation pipelines and Sclable cloud data warehouse for analytics.
-
-`f) Databases`:
-
-• PostgreSQL
-
-<img width="1920" height="615" alt="image" src="https://github.com/user-attachments/assets/eba3d70a-a679-42fa-b5a0-adbd09fdf883" />
-
-<img width="1745" height="1009" alt="image" src="https://github.com/user-attachments/assets/d152aab0-bfd6-4a35-a321-162cdb29668c" />
-
-<img width="1781" height="1025" alt="image" src="https://github.com/user-attachments/assets/ead5b27a-8ef6-4a23-a885-021df14cdb75" />
-
-
-• BigQuery
-
- For Structured transactional data storage, Analytical Querying and reporting, Data marts for fraud analysis and business intelligence.
-
-`g) Analytics & BI`:
-Power BI
-
-For fraud monitoring, business reporting and executive dashboards.
-
-`h) Machine Learning`:
-Scikit-learn
-
-For fraud detection model
-
-`i) DevOps`:
-
-• Docker
-
-• Git
-
-<img width="1920" height="950" alt="image" src="https://github.com/user-attachments/assets/f72458c5-3c54-4408-b938-698432e5c2a4" />
-
-For Deployment and CI/CD automation.
+| Category         | Technologies  |
+| ---------------- | ------------- |
+| Programming      | Python, SQL   |
+| Streaming        | Kafka         |
+| Processing       | PySpark       |
+| Workflow         | Airflow       |
+| Cloud            | GCS, BigQuery |
+| Database         | PostgreSQL    |
+| Visualization    | Power BI      |
+| Containerization | Docker        |
+| ML               | Scikit-learn  |
 
 # 4. Project Folder Structure
-
     banking-data-platform/
+        ├── airflow/
+        ├── credentials/
+        ├── datalake/
+        ├── orchestration/
+        │   ├── dags/
+        │   └── scripts/
+        ├── src/
+        │   ├── cloud/
+        │   ├── ingestion/
+        │   ├── storage/
+        │   └── streaming/
+        ├── tests/
+        ├── docker-compose.yml
+        ├── requirements.txt
+        └── README.md
+# 5. Pipeline Workflow
 
-    src/
-     ├── ingestion/
-            ├── producer.py
-            ├── transaction_generator.py   
-     ├── streaming/
-            ├── __pycache__ 
-            ├── config.py
-            ├── fraud_rules.py
-            ├── postgres_sink.py
-            ├── schema.py
-            ├── spark_streaming.py
-            ├── transformation.py
-     ├── orchestration/
-            ├── airflow_dag.py
-     ├── storage/
-            ├── __pycache__
-            ├── create_analytics_table.py
-            ├── db.py
-     ├── logs/
-            ├── pipeline.log
-     ├── cloud/
-          ├── bigquery_loader.py
-          ├── gcs_sink.py
 
-    dashboards/
-     ├── powerbi_dashboard.pbix
+## a. Generate Transactions
 
-    tests/
-     ├── test_etl.py
+A Python-based transaction generator simulates real-world banking activities by creating synthetic transaction records with customer, account, merchant, amount and timestamp information. This provides a continuous stream of data for testing the pipeline.
 
-# 5. Data Pipeline Flow
+## b. Publish to Kafka
 
-The pipeline follow these stages.
+The generated transactions are published to an Apache Kafka topic, where Kafka acts as a reliable, fault-tolerant message broker for real-time event streaming.
 
-**Step 1: Transaction generation**
+## c. Process with Spark
 
-A python Script simulates banking transactions.
+PySpark Structured Streaming consumes transaction events from Kafka and processes them in real time, enabling scalable stream processing and preparing data for downstream analytics.
 
-Example:
+## d. Validate Data
 
-     {
-    "transaction_id": "TX1001",
-    "customer_id": "C1200",
-    "amount": 25000,
-    "merchant": "Naivas",
-    "channel": "Mobile Banking",
-    "location": "Nairobi"
-    }
+Incoming records are validated against predefined business rules and schemas to ensure data quality, consistency and completeness before further processing.
 
-File:
+## e. Store Raw Data in Google Cloud Storage
 
-    src/producer/transaction_generator.py
+Validated transactions are written to Google Cloud Storage as raw data, creating a scalable data lake that preserves the original records for auditing and future reprocessing.
 
-**Step 2: Kafka Streaming**
+## f. Transform for Analytics
 
-The producer sends transactions to Kafka.
+The streaming data is cleaned, enriched and transformed into an analytics-ready format. During this stage, business metrics and derived fields are generated to support reporting and analysis.
 
-Kafka Topic:
+## g. Load into BigQuery
 
-    bank_transactions
+The transformed data is loaded into Google BigQuery, where it is organized into analytical tables optimized for fast SQL queries and business intelligence workloads.
 
-File:
+## h. Detect Fraud
 
-    src/prodducer/producer.py
+Fraud detection rules analyze transaction patterns to identify potentially suspicious activities, assign risk scores, and flag transactions that require further investigation.
 
-**`Purpose:`** Real-time event streaming.
+## i. Visualize in Power BI
 
-**Step 3: Spark Consumer**
+Business users access interactive Power BI dashboards to monitor transaction volumes, fraud trends, customer behavior, and other key performance indicators in near real time.
 
-Spark contiuously consume transaction streams.
+# 6. Deployment Guide 
 
-Tasks:
-
-• Read Kafka messages
-
-• Parse JSON
-
-• Filter invalid records
-
-• Transform transaction fields.
-
-File:
-
-    src/streaming/spark_streaming.py
-
-**Step 4: Data Validation**
-
-Validate incoming transaction quality.
-
-Checks performed:
-
-• Null account IDs
-
-• Duplicate transactio IDs
-
-• Invalid timestamps
-
-• Negative transaction amounts
-
-`Tools:`Great Expectations.
-
-`Purpose:`Ensure high-quality data
-
-**Step 5: Cloud Storage**
-
-Stpre raw and processed transaction data in **Google Cloud Storage (GCS)**.
-
-Storage:
-
-    gs://bank-transactions/raw/
-    gs://bank-transactions/processed/
-
-`Tools:` Google Cloud Storage (GCS)
-
-`Purpose`: Centralized cloud storage for incoming banking transactions, Store processed parquet files for downstream analytics and raw transaction data lake storage.
-
-**Step 6: ETL Transformation**
-
-Transform raw transaction data into analytics-ready datasets.
-
-`Tables Created;`
-
-    customer_transactions
-    merchant_summary
-    daily_transactions
-    fraud_alerts
-
-`Tools`:
-• Google Cloud Dataflow
-
-• dbt
-
-• Apache Spark
-
-`Purpose`: Clean and validate transaction data, transform raw data into anlaytics-ready datasets and prepares fraud detection for machine learning models.
-
-**Step 7: Data Warehouse**
-
-Load transformed datasets into **BigQuery Data Warehouse**
-
-`Warehouse Tables`:
-
-    fact_transactions  
-    dim_customers  
-    dim_merchants  
-    fact_fraud_alerts  
-    dim_accounts  
-    dim_date
-
-`Tools`:
-BigQuery
-
-`Purpose`:
-
-• Centralized analytical data warehouse.
-
-• Store fact and dimension tables for reporting.
-
-• Support fraud monitoring and real-time analytics queries.
-
-• Enable dashboard reporting and machine learning workloads.
-
-**Step 8: Fraud Detection**
-
-Machine laerning model detects suspicious transactions.
-
-Features used:
-
-• Transaction amount
-
-• Frequency transactions
-
-• Merchant patterns
-
-• Geographic location cahanges
-
-Model:
-
-    Isolation Forest
-
-`Purpose`:
-Farud detetction
-
-**Step 9: Dashboard Reporting**
-
-Power BI reads warehouse data.
-
-Users can monitor:
-
-• Fraud alerts
-
-• Failed transactions
-
-• Daily transaction volume
-
-• Merchant activity
-
-`Purpose`:
-Business Intelligence
-
-# 6. Deployment Instructions 
-
-**Clone repository**
+**a. Clone the repository**
 
     git clone https://github.com/wachira-samuel/banking-data-platform
 
-**Create Virtual environment**
+**b. Create Virtual environment**
 
-    python -m venv venv
+    python -m venv .venv
 
 Activate environment.
 
 Linux/Ubuntu/Mac
 
-    source venv/bin/activate
+    source .venv/bin/activate
 
 Windows
 
-    venv\Scripts\activate
+    .venv\Scripts\activate
 
-**Install Dependencies**
+**c. Install Dependencies**
+
+Using UV(recommended):
+
+    uv pip install -r requirements.txt
+
+Or using pip:
 
     pip install -r requirements.txt
 
-**Start Docker Services**
+**d. Start the Platform Services**
 
-    docker compose up
-This starts:
+Start all the required services using Docker Compose:
 
-• Kafka
+    docker compose up -d
+    
+This start the following services:
+
+• Apache Kafka
 
 • Zookeeper
 
 • PostgreSQL
 
-• Spark
+•  Apache Spark
 
-• Airflow
+• Apache Airflow
 
-**Start Kafka Producer**
+Verify that the containers are running:
 
-    python src/ingestion/producer.py
+    docker ps
 
-**Start Spark Consumer**
+# 7. Generate Transaction Data
+
+Run the transaction generator to simulate banking transactions:
+
+       python src/ingestion/transaction_generator.py
+
+# 8. Publish Transactions to Kafka
+
+Start the Kafka producer:
+
+       python src/ingestion/producer.py
+
+# 9. Start the Spark Streaming Pipeline
+
+Launch the Spark Structured Streaming application:
 
     python src/streaming/spark_streaming.py
 
-**Start Airflow**
+The pipeline will:
+
+- Consume transactions from Kafka
+- Validate incoming records
+- Transform data for analytics
+- Detect potentially fraudulent transactions
+- Store raw and processed data in Google Cloud Storage
+- Load analytics-ready data into BigQuery
+- Write operational data to PostgreSQL
+  
+**10. Start Airflow**
 
     airflow standalone
 
-**Run ETL Pipeline**
+If Airflow is running through Docker Compose, open:
 
-    python src/etl/etl_pipeline.py
+    http://localhost:8080
+    
+From the Airflow UI, you can monitor and manage workflow execution.
 
-# 7. Power BI Dashboard
+# 11. Visualize the Data
 
-The dashboard provides transaction monitoring and fraud analytics.
+After data has been loaded into BigQuery, connect Power BI to BigQuery to build interactive dashboards for transaction analytics and fraud monitoring.
 
 Metrics displayed:
 
@@ -470,57 +314,17 @@ Metrics displayed:
 
         ---------------------------------------------------------------
 
-# 9. Kafka Metrics Monitoring
+## Project Highlights
 
-Kafka metrics help monitor system health.
+- Built an end-to-end streaming data pipeline
+- Integrated Kafka, Spark, PostgreSQL, GCS, BigQuery, and Airflow
+- Implemented fraud detection rules
+- Designed cloud analytics workflows
+- Containerized services with Docker
 
-Important metrics:
+## License
 
-**a) Producer throughput**
-
-Tracks messages sent per second
-
-Example:
-
-    Messages/sec = 1200
-
-**b) Consumer Lag**
-
-Tracks delay in processing messages.
-
-Example:
-
-    Lag = 15 messages
-
-**c) Broker health**
-
-Track active brokers.
-
-Example:
-
-    3 Active Brokers
-
-**d) Topic size**
-
-Tracks volume of transaction messages.
-
-Example:
-
-    Topic = 1.5 GB
-
-**e) Failed Messages**
-
-Track messages that failed delivery.
-
-Example:
-        
-    Failed messages = 4
-
-`Monitoring tools:`
-
-• Kafka UI
-
-• Grafana
+This project is licensed under the MIT License.
 
     
 
