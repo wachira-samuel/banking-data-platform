@@ -1,54 +1,30 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Environment
+.env
+.env.local
 
 # Spark
 tmp/
 spark-warehouse/
 metastore_db/
-
-# Checkpoints
-/tmp/
-/checkpoints/
-
-# Data lake generated files
-src/datalake/raw/*
-src/datalake/processed/*
-src/datalake/invalid/*
-
-# Spark metadata
-_spark_metadata/
+**/_spark_metadata/
 *.crc
 
-# Secrets Credentials
-credentials/
-*.json
-
-
-# Virtual environment
-.venv/
-bank/
-.env
-
-# Uv package manager
-uv.lock
-pyproject.toml
-
-# Logs
+# Runtime data
+datalake/
 logs/
 *.log
 
-# IDE
-.vscode/
-.idea/
+# Credentials
+credentials/
 
-# OS files
-.DS_Store
-
-# Jupyter
-.ipynb_checkpoints/
+# Google Cloud
+google-cloud-sdk/
 
 # Airflow
 airflow.db
@@ -56,15 +32,16 @@ airflow.db
 # Docker
 *.pid
 
-# Secrets
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local configuration
 config.yaml
-.env.local
-
-# Google Cloud SDK / CLI
-src/google-cloud-sdk/
-src/google-cloud-cli-linux-x86_64.tar.gz
-
-# Local jars / libs 
-lib/
-# spark checkpoints
-/tmp/
