@@ -227,7 +227,7 @@ The pipeline will:
 - Load analytics-ready data into BigQuery
 - Write operational data to PostgreSQL
   
-**10. Start Airflow**
+# 10. Start Airflow
 
     airflow standalone
 
