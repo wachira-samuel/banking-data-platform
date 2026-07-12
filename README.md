@@ -26,12 +26,7 @@ This project solves that problem by building an  end-to-end banking data platfor
 
 # 2. Architecture Overview
 
-                          Apache Airflow
-                  (Pipeline Scheduling & Orchestration)
-                               │
-                               ▼
-
-                     Transaction Generator
+                       Transaction Generator
                                │
                                ▼
                         Kafka Producer
@@ -48,6 +43,10 @@ This project solves that problem by building an  end-to-end banking data platfor
                │               │                │
                └───────────────┴────────────────┘
                                │
+                            Apache Airflow
+                  (Pipeline Scheduling & Orchestration)
+                               │
+                               ▼
           ┌────────────────────┼────────────────────┐
           ▼                    ▼                    ▼
        PostgreSQL           Google Cloud Storage     BigQuery
@@ -70,7 +69,8 @@ This project solves that problem by building an  end-to-end banking data platfor
 | Google Cloud Storage       | Stores raw and processed datasets in the data lake |
 | BigQuery                   | Stores analytics-ready data for reporting          |
 | Power BI                   | Business intelligence dashboards                   |
-| Apache Airflow             | Schedules and orchestrates the entire pipeline     |
+| Apache Airflow             | Schedules and orchestrates the analytical batch  workflows and data warehousing layer    |
+                                          
 
 
 **Architecture Diagram**
