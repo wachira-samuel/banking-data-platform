@@ -49,7 +49,7 @@ This project solves that problem by building an  end-to-end banking data platfor
                                ▼
           ┌────────────────────┼────────────────────┐
           ▼                    ▼                    ▼
-       PostgreSQL           Google Cloud Storage     BigQuery
+       PostgreSQL           Google Cloud Storage   BigQuery
      (Operational Store)     (Raw & Processed)   (Analytics Warehouse)
                                                     │
                                                     ▼
