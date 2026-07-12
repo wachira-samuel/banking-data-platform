@@ -72,6 +72,7 @@ This project solves that problem by building an  end-to-end banking data platfor
 | Apache Airflow             | Schedules and orchestrates the analytical batch  workflows and data warehousing layer    |
                                           
 
+This architecture implements a hybrid real-time and batch data platform. Apache Kafka and PySpark handle continuous, low-latency ingestion, validation and storage of streaming banking transactions. Apache Airflow orchestrates the downstream analytical lifecycle scheduling the batch movement of processed data from GCS to BigQuery, managing data quality checks and preparing optimized datasets for Power BI reporting.
 
 **Architecture Diagram**
 
