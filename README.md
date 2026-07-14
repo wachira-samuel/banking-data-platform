@@ -1,6 +1,6 @@
 # Real-Time Banking Transaction Monitoring and Fraud Detection Platform.
 
-This project demonstrates an end-to-end data engineering platform for processing banking transactions in real time. It ingests streaming events with Apache Kafka, processes and validates them using PySpark, stores data in PostgreSQL and Google Cloud Storage, loads analytics-ready datasets into BigQuery, orchestrates workflows with Apache Airflow and visualizes business metrics in Power BI.
+Designed and implemented an end-to-end, production-style streaming data platform that ingests banking transactions using Apache Kafka, validates and transforms events with PySpark, orchestrates workflows with Apache Airflow, stores operational data in PostgreSQL and Google Cloud Storage, and loads curated datasets into BigQuery to support fraud detection, compliance reporting, and operational analytics.
 
 The goal is to demonstrate how enterprise banking systems handle real-time streaming data piplines, compliance reporting, fraud detection and anlytics architecture.
 
